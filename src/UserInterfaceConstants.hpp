@@ -96,6 +96,7 @@ const PixelNumber popupSideMargin = 20;
 const PixelNumber popupTopMargin = 20;
 const PixelNumber keyboardTopMargin = 20;
 const PixelNumber popupFieldSpacing = 20;
+const PixelNumber wifiTopMargin = 20;
 
 const PixelNumber axisLabelWidth = 40;
 const PixelNumber firstMessageRow = margin + rowHeight;		// adjust this to get a whole number of message rows below the keyboard
@@ -169,6 +170,11 @@ const PixelNumber keyButtonHStep = (keyboardPopupWidth - 2 * popupSideMargin - k
 const PixelNumber keyButtonVStep = buttonHeight + keyboardButtonRowSpacing;
 const PixelNumber keyboardPopupHeight = (5 * keyButtonVStep) + (2 * keyboardTopMargin) + buttonHeight;
 const PixelNumber keyboardPopupY = margin;
+
+const PixelNumber wifiButtonWidth = DisplayX/5;
+const PixelNumber wifiPopupWidth = fullPopupWidth;
+const PixelNumber wifiPopupHeight = (5 * keyButtonVStep) + (2 * keyboardTopMargin) + buttonHeight + keyButtonVStep;
+const PixelNumber wifiPopupY = margin;
 
 const unsigned int NumFileColumns = 1;
 const unsigned int NumFileRows = (fullPopupHeight - (2 * popupTopMargin) + fileButtonRowSpacing)/(buttonHeight + fileButtonRowSpacing) - 1;

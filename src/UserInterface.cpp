@@ -32,7 +32,7 @@ const Icon heaterIcons[MaxHeaters] = { IconBed, IconNozzle1, IconNozzle2, IconNo
 #endif
 
 // Public fields
-TextField *fwVersionField, *userCommandField;
+TextField *fwVersionField, *userCommandField, *wifiSsidField, *wifiPasswordField;
 IntegerField *freeMem;
 StaticTextField *touchCalibInstruction, *debugField;
 StaticTextField *messageTextFields[numMessageRows], *messageTimeFields[numMessageRows];
@@ -62,7 +62,7 @@ static TextButton *macroButtons[NumDisplayedMacros];
 static TextButton *controlPageMacroButtons[NumControlPageMacroButtons];
 static String<controlPageMacroTextLength> controlPageMacroText[NumControlPageMacroButtons];
 
-static PopupWindow *setTempPopup, *movePopup, *extrudePopup, *fileListPopup, *macrosPopup, *fileDetailPopup, *baudPopup, *volumePopup, *areYouSurePopup, *keyboardPopup, *languagePopup, *coloursPopup;
+static PopupWindow *setTempPopup, *movePopup, *extrudePopup, *fileListPopup, *macrosPopup, *fileDetailPopup, *baudPopup, *volumePopup, *areYouSurePopup, *keyboardPopup, *languagePopup, *coloursPopup, *wifiPopup;
 static StaticTextField *areYouSureTextField, *areYouSureQueryField;
 static DisplayField *baseRoot, *commonRoot, *controlRoot, *printRoot, *messageRoot, *setupRoot;
 static SingleButton *homeButtons[MaxAxes], *toolButtons[MaxHeaters], *homeAllButton, *bedCompButton;
@@ -84,6 +84,7 @@ static SingleButton *moveButton, *extrudeButton, *macroButton;
 static PopupWindow *babystepPopup;
 static AlertPopup *alertPopup;
 static CharButtonRow *keyboardRows[4];
+static CharButtonRow *wifiRows[4];
 static const char* array const * array currentKeyboard;
 
 static ButtonBase * null currentTab = nullptr;
@@ -105,6 +106,12 @@ const size_t numUserCommandBuffers = 6;					// number of command history buffers
 static String<maxUserCommandLength> userCommandBuffers[numUserCommandBuffers];
 static size_t currentUserCommandBuffer = 0, currentHistoryBuffer = 0;
 
+const size_t maxSSIDLength = 16;
+const size_t maxPasswordLength = 16;
+
+static String<maxSSIDLength> wifiSSID;
+static String<maxPasswordLength> wifiPassword;
+
 static unsigned int numTools = 0;
 static unsigned int numHeaters = 0;
 static unsigned int numHeaterAndToolColumns = 0;
@@ -118,6 +125,13 @@ const char* array null currentFile = nullptr;			// file whose info is displayed 
 const StringTable * strings = &LanguageTables[0];
 static bool keyboardIsDisplayed = false;
 static bool keyboardShifted = false;
+
+static TextButton *wifiSsidButton, *wifiPasswordButton;
+
+static bool wifiIsDisplayed = false;
+static bool wifiEditSSID = false;
+static bool wifiEditPassword = false;
+static bool wifiShifted = false;
 
 int32_t alertMode = -1;									// the mode of the current alert, or -1 if no alert displayed
 uint32_t alertTicks = 0;
@@ -662,6 +676,93 @@ void CreateKeyboardPopup(uint32_t language, ColourScheme colours)
 	keyboardPopup->AddField(new IconButton(row, popupSideMargin + 3 * wideKeyButtonWidth + 2 * keyButtonHSpace, wideKeyButtonWidth, IconEnter, evSendKeyboardCommand));
 }
 
+// Create the pop-up keyboard
+void CreateWiFiPopup(uint32_t language, ColourScheme colours)
+{
+	static const char* array const keysEN[8] = { "1234567890-+", "QWERTYUIOP[]", "ASDFGHJKL:@", "ZXCVBNM,./", "!\"#$%^&*()_=", "qwertyuiop{}", "asdfghjkl;'", "zxcvbnm<>?" };
+	static const char* array const keysDE[8] = { "1234567890-+", "QWERTZUIOP[]", "ASDFGHJKL:@", "YXCVBNM,./", "!\"#$%^&*()_=", "qwertzuiop{}", "asdfghjkl;'", "yxcvbnm<>?" };
+	static const char* array const keysFR[8] = { "1234567890-+", "AZERTWUIOP[]", "QSDFGHJKLM@", "YXCVBN.,:/", "!\"#$%^&*()_=", "azertwuiop{}", "qsdfghjklm'", "yxcvbn<>;?" };
+	static const char* array const * const keyboards[] = { keysEN, keysDE, keysFR, keysEN, keysEN };		// Spain and Czech keyboard layout is same as English
+
+	static_assert(ARRAY_SIZE(keyboards) >= NumLanguages, "Wrong number of keyboard entries");
+
+	wifiPopup = new StandardPopupWindow(wifiPopupHeight, wifiPopupWidth, colours.popupBackColour, colours.popupBorderColour, colours.popupInfoTextColour, colours.buttonImageBackColour, nullptr, wifiTopMargin);
+
+	const PixelNumber keyLabelWidth = (wifiPopupWidth - popupSideMargin * 2) / 3;
+	const PixelNumber keyLabelSpace = keyButtonHStep - keyButtonWidth;
+
+	// Add the text area for the SSID
+	DisplayField::SetDefaultColours(colours.popupButtonTextColour, colours.popupButtonBackColour);
+	wifiSsidButton = new TextButton(wifiTopMargin + labelRowAdjust - 1, popupSideMargin, keyLabelWidth, "SSID", evWiFiSSID, 0);
+	wifiPopup->AddField(wifiSsidButton);
+	wifiSsidButton->Press(true, 0);
+
+	DisplayField::SetDefaultColours(colours.popupInfoTextColour, colours.popupInfoBackColour);		// need a different background colour
+	wifiSsidField = new TextField(wifiTopMargin + labelRowAdjust,						// Y position
+								  popupSideMargin + keyLabelWidth + keyLabelSpace,		// X position
+								  wifiPopupWidth - 2 * popupSideMargin - closeButtonWidth - popupFieldSpacing - keyLabelWidth - keyLabelSpace,	// width
+								  TextAlignment::Left,									// alignment
+								  nullptr, "_");
+	wifiSsidField->SetLabel(wifiSSID.c_str());	// set up to display the current user command
+	wifiPopup->AddField(wifiSsidField);
+
+	// Add the text area for the password
+	DisplayField::SetDefaultColours(colours.popupButtonTextColour, colours.popupButtonBackColour);
+	wifiPasswordButton = new TextButton(wifiTopMargin + labelRowAdjust + keyButtonVStep - 1, popupSideMargin, keyLabelWidth, strings->password, evWiFiPassword, 0);
+	wifiPopup->AddField(wifiPasswordButton);
+
+	DisplayField::SetDefaultColours(colours.popupInfoTextColour, colours.popupInfoBackColour);		// need a different background colour
+	wifiPasswordField = new TextField(wifiTopMargin + labelRowAdjust + keyButtonVStep,
+									  popupSideMargin + keyLabelWidth + keyLabelSpace,
+									  wifiPopupWidth - 2 * popupSideMargin - closeButtonWidth - popupFieldSpacing - keyLabelWidth - keyLabelSpace,
+									  TextAlignment::Left,
+									  nullptr, "_");
+	wifiPasswordField->SetLabel(wifiPassword.c_str());	// set up to display the current user command
+	wifiPopup->AddField(wifiPasswordField);
+
+	if (language >= NumLanguages)
+	{
+		language = 0;
+	}
+
+	currentKeyboard = keyboards[language];
+	PixelNumber row = wifiTopMargin + keyButtonVStep * 2;
+
+	for (size_t i = 0; i < 4; ++i)
+	{
+		DisplayField::SetDefaultColours(colours.popupButtonTextColour, colours.popupButtonBackColour);
+
+		// New code using CharButtonRow to economise on RAM at the expense of more flash memory usage
+		const PixelNumber column = popupSideMargin + (i * keyButtonHStep)/3;
+		wifiRows[i] = new CharButtonRow(row, column, keyButtonWidth, keyButtonHStep, currentKeyboard[i], evWiFiKey);
+		wifiPopup->AddField(wifiRows[i]);
+		DisplayField::SetDefaultColours(colours.popupButtonTextColour, colours.buttonImageBackColour);
+
+		switch (i)
+		{
+			case 0:
+				wifiPopup->AddField(new IconButton(row, wifiPopupWidth - popupSideMargin - (5 * keyButtonWidth)/4, (5 * keyButtonWidth)/4, IconBackspace, evWiFiBackspace));
+				break;
+
+			default:
+				break;
+		}
+
+		row += keyButtonVStep;
+	}
+
+	// Add the shift, space and enter keys
+	const PixelNumber keyButtonHSpace = keyButtonHStep - keyButtonWidth;
+	const PixelNumber wideKeyButtonWidth = (wifiPopupWidth - 2 * popupSideMargin - 2 * keyButtonHSpace)/5;
+
+	DisplayField::SetDefaultColours(colours.popupButtonTextColour, colours.popupButtonBackColour);
+	wifiPopup->AddField(new TextButton(row, popupSideMargin, wideKeyButtonWidth, "Shift", evWiFiShift, 0));
+	wifiPopup->AddField(new TextButton(row, popupSideMargin + wideKeyButtonWidth + keyButtonHSpace, 2 * wideKeyButtonWidth, "", evWiFiKey, (int)' '));
+
+	DisplayField::SetDefaultColours(colours.popupButtonTextColour, colours.buttonImageBackColour);
+	wifiPopup->AddField(new TextButton(row, wifiPopupWidth - popupSideMargin - wideKeyButtonWidth, wideKeyButtonWidth, "OK", evSendWiFiCommand, 0));
+}
+
 // Create the babystep popup
 void CreateBabystepPopup(const ColourScheme& colours)
 {
@@ -895,6 +996,7 @@ void CreateSetupTabFields(uint32_t language, const ColourScheme& colours)
 	AddTextButton(row5, 1, 3, strings->brightnessDown, evDimmer, nullptr);
 	AddTextButton(row5, 2, 3, strings->brightnessUp, evBrighter, nullptr);
 	dimmingTypeButton = AddTextButton(row6, 0, 3, strings->displayDimmingNames[(unsigned int)GetDisplayDimmerType()], evSetDimmingType, nullptr);
+	AddTextButton(row6, 1, 3, strings->wifiSetup, evWiFiSettings, nullptr);
 	AddTextButton(row6, 2, 3, strings->clearSettings, evFactoryReset, nullptr);
 	setupRoot = mgr.GetRoot();
 }
@@ -1031,6 +1133,7 @@ namespace UI
 		CreateColoursPopup(colours);
 		CreateAreYouSurePopup(colours);
 		CreateKeyboardPopup(language, colours);
+		CreateWiFiPopup(language, colours);
 		CreateLanguagePopup(colours);
 		alertPopup = new AlertPopup(colours);
 		CreateBabystepPopup(colours);
@@ -1262,12 +1365,31 @@ namespace UI
 		keyboardIsDisplayed = true;
 	}
 
+	// Pop up the wifi setup
+	void ShowWiFiSetup()
+	{
+		mgr.SetPopup(wifiPopup, AutoPlace, keyboardPopupY);
+		wifiIsDisplayed  = true;
+		wifiEditSSID     = true;
+		wifiEditPassword = false;
+
+		wifiSsidButton->Press(true, 0);
+		wifiPasswordButton->Press(false, 0);
+	}
+
 	// This is called when the Cancel button on a popup is pressed
 	void PopupCancelled()
 	{
 		if (mgr.GetPopup() == keyboardPopup)
 		{
 			keyboardIsDisplayed = false;
+		}
+
+		if (mgr.GetPopup() == wifiPopup)
+		{
+			wifiIsDisplayed  = false;
+			wifiEditSSID     = false;
+			wifiEditPassword = false;
 		}
 	}
 
@@ -1596,6 +1718,22 @@ namespace UI
 		for (size_t i = 0; i < MaxHeaters; ++i)
 		{
 			mgr.Show(standbyTemps[i], (newFeatures & noStandbyTemps) == 0);
+		}
+	}
+
+	void SendWiFiCommand(void)
+	{
+		if (wifiSSID.size() != 0)
+		{
+			SerialIo::SendString("M552 S0\n");
+
+			SerialIo::SendString("M587 S\"");
+			SerialIo::SendString(wifiSSID.c_str());
+			SerialIo::SendString("\" P\"");
+			SerialIo::SendString(wifiPassword.c_str());
+			SerialIo::SendString("\"\n");
+
+			SerialIo::SendString("M552 S1\n");
 		}
 	}
 
@@ -1989,6 +2127,10 @@ namespace UI
 				ShowKeyboard();
 				break;
 
+			case evWiFiSettings:
+				ShowWiFiSetup();
+				break;
+
 			case evInvertX:
 				MirrorDisplay();
 				CalibrateTouch();
@@ -2106,10 +2248,11 @@ namespace UI
 				break;
 
 			case evKey:
-				if (userCommandBuffers[currentUserCommandBuffer].add((char)bp.GetIParam()))
+				if ((keyboardIsDisplayed) && (userCommandBuffers[currentUserCommandBuffer].add((char)bp.GetIParam())))
 				{
 					userCommandField->SetChanged();
 				}
+
 				break;
 
 			case evShift:
@@ -2131,6 +2274,71 @@ namespace UI
 				}
 				keyboardShifted = !keyboardShifted;
 				currentButton.Clear();				// make the key sticky
+				break;
+
+			case evWiFiKey:
+				if ((wifiIsDisplayed) && (wifiEditSSID) && (wifiSSID.add((char)bp.GetIParam())))
+				{
+					wifiSsidField->SetChanged();
+				}
+				else if ((wifiIsDisplayed) && (wifiEditPassword) && (wifiPassword.add((char)bp.GetIParam())))
+				{
+					wifiPasswordField->SetChanged();
+				}
+				break;
+
+			case evWiFiShift:
+				{
+					size_t rowOffset;
+
+					if (wifiShifted)
+					{
+						bp.GetButton()->Press(false, 0);
+						rowOffset = 0;
+					}
+					else
+					{
+						rowOffset = 4;
+					}
+
+					for (size_t i = 0; i < 4; ++i)
+					{
+						wifiRows[i]->ChangeText(currentKeyboard[i + rowOffset]);
+					}
+				}
+
+				wifiShifted = !wifiShifted;
+				currentButton.Clear();				// make the key sticky
+				break;
+
+			case evWiFiSSID:
+				wifiEditSSID     = true;
+				wifiEditPassword = false;
+				wifiPasswordButton->Press(false, 0);
+				currentButton.Clear();				// make the key sticky
+				break;
+
+			case evWiFiPassword:
+				wifiEditSSID     = false;
+				wifiEditPassword = true;
+				wifiSsidButton->Press(false, 0);
+				currentButton.Clear();				// make the key sticky
+				break;
+
+			case evWiFiBackspace:
+				if ((wifiEditSSID) && !wifiSSID.isEmpty())
+				{
+					wifiSSID.erase(wifiSSID.size() - 1);
+					wifiSsidField->SetChanged();
+					ShortenTouchDelay();
+				}
+				else if ((wifiEditPassword) && !wifiPassword.isEmpty())
+				{
+					wifiPassword.erase(wifiPassword.size() - 1);
+					wifiPasswordField->SetChanged();
+					ShortenTouchDelay();
+				}
+
 				break;
 
 			case evBackspace:
@@ -2184,6 +2392,13 @@ namespace UI
 					userCommandBuffers[currentUserCommandBuffer].clear();
 					userCommandField->SetLabel(userCommandBuffers[currentUserCommandBuffer].c_str());
 				}
+				break;
+
+			case evSendWiFiCommand:
+				SendWiFiCommand();
+				PopupCancelled();
+				mgr.ClearPopup();
+				ChangePage(tabMsg);
 				break;
 
 			case evCloseAlert:

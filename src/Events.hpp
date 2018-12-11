@@ -43,7 +43,7 @@ enum Event : uint8_t
 	evKeyboard,
 
 	// Setup functions
-	evCalTouch, evSetBaudRate, evInvertX, evInvertY, evAdjustBaudRate, evSetVolume, evAdjustVolume, evReset,
+	evCalTouch, evSetBaudRate, evInvertX, evInvertY, evAdjustBaudRate, evSetVolume, evAdjustVolume, evReset, evWiFiSettings,
 
 	evYes,
 	evCancel,
@@ -54,6 +54,8 @@ enum Event : uint8_t
 	evBabyStepPopup, evBabyStepAmount,
 
 	evKey, evShift, evBackspace, evSendKeyboardCommand, evUp, evDown,
+
+	evWiFiSSID, evWiFiPassword, evWiFiKey, evWiFiShift, evWiFiBackspace, evSendWiFiCommand,
 
 	evAdjustLanguage, evSetLanguage,
 	evAdjustColours, evSetColours,

@@ -70,6 +70,7 @@ struct StringTable
 	CSTRING saveSettings;
 	CSTRING clearSettings;
 	CSTRING saveAndRestart;
+	CSTRING wifiSetup;
 
 	// Misc
 	CSTRING confirmFactoryReset;
@@ -87,6 +88,7 @@ struct StringTable
 	CSTRING messages;
 	CSTRING firmwareVersion;
 	CSTRING response;
+	CSTRING password;
 
 	// File popup
 	CSTRING filesOnCard;
@@ -160,6 +162,7 @@ const StringTable LanguageTables[NumLanguages] =
 		"Save settings",
 		"Clear settings",
 		"Save & Restart",
+		"WiFi Setup",
 
 		// Misc
 		"Confirm factory reset",
@@ -177,6 +180,7 @@ const StringTable LanguageTables[NumLanguages] =
 		"Messages",
 		"Panel Due firmware version ",	// note space at end
 		"Response",
+		"Password",
 
 		// File popup
 		"Files on card ",				// note the space on the end
@@ -269,6 +273,7 @@ const StringTable LanguageTables[NumLanguages] =
 		"Einstllgen sichern",
 		"Werks-Reset",
 		"Sichern & Reboot",
+		"WiFi Setup",
 
 		// Misc
 		"Alle Einstellungen zurücksetzen",
@@ -286,6 +291,7 @@ const StringTable LanguageTables[NumLanguages] =
 		"Nachrichten",
 		"Panel Due Firmwareversion ",	// note space at end
 		"Antwort",
+		"Passwort",
 
 		// File popup
 		"Dateien auf Karte ",			// note the space on the end
@@ -378,6 +384,7 @@ const StringTable LanguageTables[NumLanguages] =
 		"Sauver paramêtres",
 		"Effacer paramêtres",
 		"Sauvegarde & Redémarrage",
+		"Configuration WiFi",
 
 		// Misc
 		"Confirmer le réinitialisation de l'imprimante",
@@ -395,6 +402,7 @@ const StringTable LanguageTables[NumLanguages] =
 		"Messages",
 		"Version du firmware du Panel Due ",	// note space at end
 		"Réponse",
+		"Mot de passe",
 
 		// File popup
 		"Fichier sur carte ",					// note the space on the end
@@ -487,6 +495,7 @@ const StringTable LanguageTables[NumLanguages] =
 		"Guardar parámetros",
 		"Borrar parámetros",
 		"Guardar y Reiniciar",
+		"Configuración WiFi",
 
 		// Misc
 		"Confirma restablecimiento de fábrica",
@@ -504,6 +513,7 @@ const StringTable LanguageTables[NumLanguages] =
 		"Mensajes",
 		"Panel Due versión de firmware ",	// note space at end
 		"Respuesta",
+		"Contrasena",
 
 		// File popup
 		"Archivos en la tarjeta ",			// note the space on the end
@@ -597,6 +607,7 @@ const StringTable LanguageTables[NumLanguages] =
 		"Uložit nastavení",
 		"Smazat nastavení",
 		"Uložit a Restart",
+		"Nastavení WiFi",
 
 		// Misc
 		"Skutečně obnovit tovární nastavení?",
@@ -614,6 +625,7 @@ const StringTable LanguageTables[NumLanguages] =
 		"Zprávy",
 		"Verze firmware Panel Due ",	// note space at end
 		"Odpověď",
+		"Heslo",
 
 		// File popup
 		"Soubory na kartě ",			// note the space on the end
